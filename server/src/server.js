@@ -27,16 +27,24 @@ io.on('connection', (socket) => {
 
 const port = process.env.PORT || 5000;
 
-async function start() {
-  await mongoose.connect(process.env.MONGO_URI);
-  server.listen(port, () => console.log(`Server running on port ${port}`));
+function connectToDatabase() {
+  mongoose.connect(process.env.MONGO_URI)
+    .then(() => console.log('MongoDB connected'))
+    .catch((error) => {
+      console.error('Mongo connection error:', error.message);
+      setTimeout(connectToDatabase, 5000);
+    });
+}
+
+function start() {
+  server.listen(port, () => {
+    console.log(`Server running on port ${port}`);
+    connectToDatabase();
+  });
 }
 
 if (require.main === module) {
-  start().catch((error) => {
-    console.error('Mongo connection error:', error);
-    process.exitCode = 1;
-  });
+  start();
 }
 
 module.exports = { app, io, server, start };
