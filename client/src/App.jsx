@@ -12,32 +12,7 @@ function formatDate(date) {
 }
 
 function Home() {
-  return (
-    <section className="landing-hero">
-      <div className="landing-copy">
-        <p className="landing-eyebrow"><span>✣</span> Curated experiences · made for you</p>
-        <h1>Make plans, <em>find</em><br />your people.</h1>
-        <p className="landing-description">
-          Discover thoughtful events in your city — from intimate gatherings to big nights out.
-        </p>
-        <div className="landing-actions">
-          <Link className="landing-primary" to="/attendee/discover">Explore events <span>→</span></Link>
-          <Link className="landing-secondary" to="/register">Host an event</Link>
-        </div>
-      </div>
-      <div className="landing-art" aria-label="EventHub events">
-        <div className="landing-mark" aria-hidden="true">
-          <span className="mark-line mark-line-one" />
-          <span className="mark-line mark-line-two" />
-          <span className="mark-line mark-line-three" />
-        </div>
-        <div className="landing-card">
-          <small>Featured this week</small>
-          <strong>Gather well.<br />Live fully.</strong>
-        </div>
-      </div>
-    </section>
-  )
+  return <EventDiscovery />
 }
 
 function EventDiscovery() {
@@ -259,29 +234,7 @@ function AuthForm({ mode }) {
 function Navigation() {
   const { user, logout } = useAuthStore()
   const location = useLocation()
-  return (
-    <nav className="site-nav">
-      <Link className="brand" to="/"><span className="brand-mark">E</span><span>Event<span className="brand-amp">&</span>Hub</span></Link>
-      <div className="nav-links">
-        <Link className={location.pathname === '/' ? 'active' : ''} to="/">Home</Link>
-        <Link to="/attendee/discover">Discover</Link>
-        {user?.role === 'organizer' && <Link to="/organizer/events">Manage events</Link>}
-      </div>
-      <div className="nav-actions">
-        {user ? (
-          <>
-            <span className="nav-user">{user.name}</span>
-            <button onClick={logout} className="nav-icon" aria-label="Log out">↪</button>
-          </>
-        ) : (
-          <>
-            <Link to="/login" className="nav-icon" aria-label="Log in">♙</Link>
-            <Link to="/register" className="nav-join">Join us</Link>
-          </>
-        )}
-      </div>
-    </nav>
-  )
+  return <nav className="site-nav"><Link className="brand" to="/"><span className="brand-mark">E</span>EventHub</Link><div className="nav-links"><Link className={location.pathname === '/' ? 'active' : ''} to="/">Discover</Link>{user?.role === 'organizer' && <Link to="/organizer/events">Manage events</Link>}</div><div className="nav-actions">{user ? <><span className="nav-user">{user.name}</span><button onClick={logout} className="nav-logout">Log out</button></> : <><Link to="/login">Login</Link><Link to="/register" className="nav-join">Create account</Link></>}</div></nav>
 }
 
 function App() {
