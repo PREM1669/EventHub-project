@@ -10,3 +10,12 @@ Event management platform monorepo.
 ## Setup
 
 Setup instructions coming. Copy `server/.env.example` to `server/.env`, add your MongoDB Atlas connection string, and use separate random values for `JWT_SECRET` and `QR_SECRET`.
+
+## Demo seed data
+
+After MongoDB is available, run `npm run seed` from `server/` to create two demo users and two published events. These credentials are for local development only:
+
+| Role | Email | Password |
+| --- | --- | --- |
+| Organizer | `organizer@eventhub.local` | `Organizer123!` |
+| Attendee | `attendee@eventhub.local` | `Attendee123!` |
