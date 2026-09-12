@@ -12,7 +12,32 @@ function formatDate(date) {
 }
 
 function Home() {
-  return <EventDiscovery />
+  return (
+    <section className="landing-hero">
+      <div className="landing-copy">
+        <p className="landing-eyebrow"><span>✣</span> Curated experiences · made for you</p>
+        <h1>Make plans, <em>find</em><br />your people.</h1>
+        <p className="landing-description">
+          Discover thoughtful events in your city — from intimate gatherings to big nights out.
+        </p>
+        <div className="landing-actions">
+          <Link className="landing-primary" to="/attendee/discover">Explore events <span>→</span></Link>
+          <Link className="landing-secondary" to="/register">Host an event</Link>
+        </div>
+      </div>
+      <div className="landing-art" aria-label="EventHub events">
+        <div className="landing-mark" aria-hidden="true">
+          <span className="mark-line mark-line-one" />
+          <span className="mark-line mark-line-two" />
+          <span className="mark-line mark-line-three" />
+        </div>
+        <div className="landing-card">
+          <small>Featured this week</small>
+          <strong>Gather well.<br />Live fully.</strong>
+        </div>
+      </div>
+    </section>
+  )
 }
 
 function EventDiscovery() {
@@ -234,11 +259,33 @@ function AuthForm({ mode }) {
 function Navigation() {
   const { user, logout } = useAuthStore()
   const location = useLocation()
-  return <nav className="mb-10 flex items-center justify-between"><Link className="text-xl font-bold text-cyan-400" to="/">EventHub</Link><div className="flex items-center gap-4 text-sm text-slate-300">{user ? <>{user.role === 'organizer' && <Link to="/organizer/events">Manage events</Link>}<Link to={user.role === 'organizer' ? '/organizer/dashboard' : '/attendee/discover'}>{user.role} portal</Link><button onClick={logout} className="text-red-300">Log out</button></> : <>{location.pathname !== '/login' && <Link to="/login">Login</Link>}{location.pathname !== '/register' && <Link to="/register">Register</Link>}</>}</div></nav>
+  return (
+    <nav className="site-nav">
+      <Link className="brand" to="/"><span className="brand-mark">E</span><span>Event<span className="brand-amp">&</span>Hub</span></Link>
+      <div className="nav-links">
+        <Link className={location.pathname === '/' ? 'active' : ''} to="/">Home</Link>
+        <Link to="/attendee/discover">Discover</Link>
+        {user?.role === 'organizer' && <Link to="/organizer/events">Manage events</Link>}
+      </div>
+      <div className="nav-actions">
+        {user ? (
+          <>
+            <span className="nav-user">{user.name}</span>
+            <button onClick={logout} className="nav-icon" aria-label="Log out">↪</button>
+          </>
+        ) : (
+          <>
+            <Link to="/login" className="nav-icon" aria-label="Log in">♙</Link>
+            <Link to="/register" className="nav-join">Join us</Link>
+          </>
+        )}
+      </div>
+    </nav>
+  )
 }
 
 function App() {
-  return <div className="mx-auto min-h-screen max-w-5xl px-6 py-8"><Navigation /><Routes><Route path="/" element={<Home />} /><Route path="/login" element={<AuthForm mode="login" />} /><Route path="/register" element={<AuthForm mode="register" />} /><Route path="/events/:id" element={<EventDetail />} /><Route path="/organizer/*" element={<ProtectedRoute allowedRoles={['organizer']}><Routes><Route path="dashboard" element={<Navigate to="/organizer/events" replace />} /><Route path="events" element={<OrganizerEvents />} /><Route path="events/new" element={<EventForm />} /><Route path="events/:id/edit" element={<EventForm />} /><Route path="*" element={<Navigate to="events" replace />} /></Routes></ProtectedRoute>} /><Route path="/attendee/*" element={<ProtectedRoute allowedRoles={['attendee']}><Routes><Route path="discover" element={<EventDiscovery />} /><Route path="*" element={<Navigate to="discover" replace />} /></Routes></ProtectedRoute>} /></Routes></div>
+  return <div className="app-shell"><Navigation /><main><Routes><Route path="/" element={<Home />} /><Route path="/login" element={<AuthForm mode="login" />} /><Route path="/register" element={<AuthForm mode="register" />} /><Route path="/events/:id" element={<EventDetail />} /><Route path="/organizer/*" element={<ProtectedRoute allowedRoles={['organizer']}><Routes><Route path="dashboard" element={<Navigate to="/organizer/events" replace />} /><Route path="events" element={<OrganizerEvents />} /><Route path="events/new" element={<EventForm />} /><Route path="events/:id/edit" element={<EventForm />} /><Route path="*" element={<Navigate to="events" replace />} /></Routes></ProtectedRoute>} /><Route path="/attendee/*" element={<ProtectedRoute allowedRoles={['attendee']}><Routes><Route path="discover" element={<EventDiscovery />} /><Route path="*" element={<Navigate to="discover" replace />} /></Routes></ProtectedRoute>} /></Routes></main></div>
 }
 
 export default App
