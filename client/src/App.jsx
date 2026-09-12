@@ -234,7 +234,8 @@ function AuthForm({ mode }) {
 function Navigation() {
   const { user, logout } = useAuthStore()
   const location = useLocation()
-  return <nav className="site-nav"><Link className="brand" to="/"><span className="brand-mark">E</span>EventHub</Link><div className="nav-links"><Link className={location.pathname === '/' ? 'active' : ''} to="/">Discover</Link>{user?.role === 'organizer' && <Link to="/organizer/events">Manage events</Link>}</div><div className="nav-actions">{user ? <><span className="nav-user">{user.name}</span><button onClick={logout} className="nav-logout">Log out</button></> : <><Link to="/login">Login</Link><Link to="/register" className="nav-join">Create account</Link></>}</div></nav>
+  const authSwitchClass = location.pathname === '/register' ? 'auth-switch register-active' : 'auth-switch'
+  return <nav className="site-nav"><Link className="brand" to="/"><span className="brand-mark">E</span>EventHub</Link><div className="nav-links"><Link className={location.pathname === '/' ? 'active' : ''} to="/">Discover</Link>{user?.role === 'organizer' && <Link to="/organizer/events">Manage events</Link>}</div><div className="nav-actions">{user ? <><span className="nav-user">{user.name}</span><button onClick={logout} className="nav-logout">Log out</button></> : <div className={authSwitchClass}><Link to="/login">Login</Link><Link to="/register">Create account</Link></div>}</div></nav>
 }
 
 function App() {
