@@ -6,9 +6,11 @@ const mongoose = require('mongoose');
 const Event = require('./models/Event');
 const User = require('./models/User');
 
-if (process.env.MONGO_DNS_SERVERS) {
-  dns.setServers(process.env.MONGO_DNS_SERVERS.split(',').map((server) => server.trim()));
-}
+dns.setServers(
+  (process.env.MONGO_DNS_SERVERS || '1.1.1.1,8.8.8.8')
+    .split(',')
+    .map((server) => server.trim())
+);
 
 const credentials = {
   organizer: {
@@ -28,7 +30,7 @@ async function upsertUser({ name, email, password, role }) {
   return User.findOneAndUpdate(
     { email },
     { name, email, passwordHash, role },
-    { upsert: true, new: true, setDefaultsOnInsert: true }
+    { upsert: true, returnDocument: 'after', setDefaultsOnInsert: true }
   );
 }
 
@@ -68,7 +70,7 @@ async function seed() {
     await Event.findOneAndUpdate(
       { organizer: organizer._id, title: event.title },
       { ...event, organizer: organizer._id, status: 'published' },
-      { upsert: true, new: true, setDefaultsOnInsert: true }
+      { upsert: true, returnDocument: 'after', setDefaultsOnInsert: true }
     );
   }
 

@@ -28,9 +28,11 @@ io.on('connection', (socket) => {
 
 const port = process.env.PORT || 5000;
 
-if (process.env.MONGO_DNS_SERVERS) {
-  dns.setServers(process.env.MONGO_DNS_SERVERS.split(',').map((server) => server.trim()));
-}
+dns.setServers(
+  (process.env.MONGO_DNS_SERVERS || '1.1.1.1,8.8.8.8')
+    .split(',')
+    .map((server) => server.trim())
+);
 
 function connectToDatabase() {
   mongoose.connect(process.env.MONGO_URI)
