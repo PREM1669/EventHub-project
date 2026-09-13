@@ -1,9 +1,14 @@
 require('dotenv').config();
 
 const bcrypt = require('bcryptjs');
+const dns = require('dns');
 const mongoose = require('mongoose');
 const Event = require('./models/Event');
 const User = require('./models/User');
+
+if (process.env.MONGO_DNS_SERVERS) {
+  dns.setServers(process.env.MONGO_DNS_SERVERS.split(',').map((server) => server.trim()));
+}
 
 const credentials = {
   organizer: {
