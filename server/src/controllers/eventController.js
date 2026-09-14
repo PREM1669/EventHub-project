@@ -1,5 +1,6 @@
 const mongoose = require('mongoose');
 const Event = require('../models/Event');
+const { generateSeats } = require('../services/seatGenerator');
 
 function validateEventInput({ title, venue, date, capacity, priceTiers }) {
   if (!title || !venue || !date || !Number.isInteger(Number(capacity)) || Number(capacity) < 1) {
@@ -59,6 +60,17 @@ exports.updateEvent = async (req, res) => {
     status: req.body.status || event.status
   });
   await event.save();
+  res.json(event);
+};
+
+exports.publishEvent = async (req, res) => {
+  const event = await Event.findOne({ _id: req.params.id, organizer: req.user.id });
+  if (!event) return res.status(404).json({ error: 'Event not found' });
+  if (event.status === 'published') return res.status(400).json({ error: 'Already published' });
+
+  event.status = 'published';
+  await event.save();
+  await generateSeats(event);
   res.json(event);
 };
 

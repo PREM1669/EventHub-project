@@ -9,6 +9,7 @@ const { Server } = require('socket.io');
 const authRoutes = require('./routes/authRoutes');
 const portalRoutes = require('./routes/portalRoutes');
 const eventRoutes = require('./routes/eventRoutes');
+const { registerSeatSocket } = require('./sockets/seatSocket');
 
 const app = express();
 app.use(cors());
@@ -22,9 +23,7 @@ app.use('/api/events', eventRoutes);
 const server = http.createServer(app);
 const io = new Server(server, { cors: { origin: '*' } });
 
-io.on('connection', (socket) => {
-  console.log('client connected', socket.id);
-});
+registerSeatSocket(io);
 
 const port = process.env.PORT || 5000;
 

@@ -43,3 +43,11 @@ export const useDeleteEvent = () => {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['myEvents'] }),
   })
 }
+
+export const usePublishEvent = () => {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (id) => api.post(`/events/${id}/publish`).then((response) => response.data),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['myEvents'] }),
+  })
+}

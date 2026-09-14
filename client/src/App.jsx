@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link, Navigate, Route, Routes, useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import api from './api/axios'
-import { useCreateEvent, useDeleteEvent, useEvent, useEvents, useMyEvents, useUpdateEvent } from './api/events'
+import { useCreateEvent, useDeleteEvent, useEvent, useEvents, useMyEvents, usePublishEvent, useUpdateEvent } from './api/events'
+import SeatMap from './pages/attendee/SeatMap'
 import ProtectedRoute from './components/ProtectedRoute'
 import { useAuthStore } from './store/authStore'
 
@@ -102,7 +103,7 @@ function EventDetail() {
       <div className="mt-3 space-y-2">
         {event.priceTiers.map((tier) => <div key={tier.name} className="flex justify-between rounded-lg bg-slate-800 p-3"><span>{tier.name} · {tier.seatCount} seats</span><span>${tier.price.toFixed(2)}</span></div>)}
       </div>
-      <button disabled className="mt-8 rounded-lg bg-slate-700 px-5 py-3 text-slate-400">Select Seats (available Day 4)</button>
+      <Link to={`/attendee/events/${event._id}/seats`} className="mt-8 inline-block rounded-lg bg-cyan-400 px-5 py-3 font-semibold text-slate-950">Select Seats</Link>
     </section>
   )
 }
@@ -111,9 +112,11 @@ function OrganizerEvents() {
   const { data: events = [], isLoading, isError } = useMyEvents()
   const deleteEvent = useDeleteEvent()
   const updateEvent = useUpdateEvent()
+  const publishEvent = usePublishEvent()
 
   function togglePublish(event) {
-    updateEvent.mutate({ id: event._id, data: { ...event, status: event.status === 'published' ? 'draft' : 'published' } })
+    if (event.status === 'published') updateEvent.mutate({ id: event._id, data: { ...event, status: 'draft' } })
+    else publishEvent.mutate(event._id)
   }
 
   return (
@@ -134,7 +137,7 @@ function OrganizerEvents() {
             </div>
             <div className="mt-4 flex flex-wrap gap-3 text-sm">
               <Link className="rounded-lg border border-slate-700 px-3 py-2" to={`/organizer/events/${event._id}/edit`}>Edit</Link>
-              <button className="rounded-lg border border-cyan-700 px-3 py-2 text-cyan-300" onClick={() => togglePublish(event)}>{event.status === 'published' ? 'Unpublish' : 'Publish'}</button>
+              <button disabled={publishEvent.isPending || updateEvent.isPending} className="rounded-lg border border-cyan-700 px-3 py-2 text-cyan-300 disabled:opacity-50" onClick={() => togglePublish(event)}>{event.status === 'published' ? 'Unpublish' : 'Publish'}</button>
               <button className="rounded-lg border border-red-900 px-3 py-2 text-red-300" onClick={() => { if (window.confirm('Delete this event?')) deleteEvent.mutate(event._id) }}>Delete</button>
             </div>
           </div>
@@ -239,7 +242,7 @@ function Navigation() {
 }
 
 function App() {
-  return <div className="app-shell"><Navigation /><main><Routes><Route path="/" element={<Home />} /><Route path="/login" element={<AuthForm mode="login" />} /><Route path="/register" element={<AuthForm mode="register" />} /><Route path="/events/:id" element={<EventDetail />} /><Route path="/organizer/*" element={<ProtectedRoute allowedRoles={['organizer']}><Routes><Route path="dashboard" element={<Navigate to="/organizer/events" replace />} /><Route path="events" element={<OrganizerEvents />} /><Route path="events/new" element={<EventForm />} /><Route path="events/:id/edit" element={<EventForm />} /><Route path="*" element={<Navigate to="events" replace />} /></Routes></ProtectedRoute>} /><Route path="/attendee/*" element={<ProtectedRoute allowedRoles={['attendee']}><Routes><Route path="discover" element={<EventDiscovery />} /><Route path="*" element={<Navigate to="discover" replace />} /></Routes></ProtectedRoute>} /></Routes></main></div>
+  return <div className="app-shell"><Navigation /><main><Routes><Route path="/" element={<Home />} /><Route path="/login" element={<AuthForm mode="login" />} /><Route path="/register" element={<AuthForm mode="register" />} /><Route path="/events/:id" element={<EventDetail />} /><Route path="/attendee/events/:eventId/seats" element={<ProtectedRoute allowedRoles={['attendee']}><SeatMap /></ProtectedRoute>} /><Route path="/organizer/*" element={<ProtectedRoute allowedRoles={['organizer']}><Routes><Route path="dashboard" element={<Navigate to="/organizer/events" replace />} /><Route path="events" element={<OrganizerEvents />} /><Route path="events/new" element={<EventForm />} /><Route path="events/:id/edit" element={<EventForm />} /><Route path="*" element={<Navigate to="events" replace />} /></Routes></ProtectedRoute>} /><Route path="/attendee/*" element={<ProtectedRoute allowedRoles={['attendee']}><Routes><Route path="discover" element={<EventDiscovery />} /><Route path="*" element={<Navigate to="discover" replace />} /></Routes></ProtectedRoute>} /></Routes></main></div>
 }
 
 export default App
