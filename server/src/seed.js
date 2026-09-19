@@ -4,6 +4,7 @@ const bcrypt = require('bcryptjs');
 const dns = require('dns');
 const mongoose = require('mongoose');
 const Event = require('./models/Event');
+const Seat = require('./models/Seat');
 const User = require('./models/User');
 const { generateSeats } = require('./services/seatGenerator');
 
@@ -49,8 +50,8 @@ async function seed() {
       date: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000),
       capacity: 120,
       priceTiers: [
-        { name: 'General', price: 49, seatCount: 90 },
-        { name: 'VIP', price: 129, seatCount: 30 }
+        { name: 'General', price: 499, seatCount: 90 },
+        { name: 'VIP', price: 1299, seatCount: 30 }
       ]
     },
     {
@@ -61,8 +62,8 @@ async function seed() {
       date: new Date(Date.now() + 28 * 24 * 60 * 60 * 1000),
       capacity: 200,
       priceTiers: [
-        { name: 'General', price: 35, seatCount: 160 },
-        { name: 'Premium', price: 85, seatCount: 40 }
+        { name: 'General', price: 349, seatCount: 160 },
+        { name: 'Premium', price: 849, seatCount: 40 }
       ]
     }
   ];
@@ -74,6 +75,9 @@ async function seed() {
       { upsert: true, returnDocument: 'after', setDefaultsOnInsert: true }
     );
     await generateSeats(savedEvent);
+    for (const tier of event.priceTiers) {
+      await Seat.updateMany({ event: savedEvent._id, tier: tier.name }, { price: tier.price });
+    }
   }
 
   console.log('Seed complete.');

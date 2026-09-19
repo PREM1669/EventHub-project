@@ -5,11 +5,19 @@ import { socket } from '../../sockets/socket'
 import { useAuthStore } from '../../store/authStore'
 import { useSeatStore } from '../../store/seatStore'
 import HoldTimer from '../../components/HoldTimer'
+import { formatPrice } from '../../utils/currency'
 
 function groupByRow(seats) {
   return seats.reduce((rows, seat) => {
     rows[seat.row] = [...(rows[seat.row] || []), seat]
     return rows
+  }, {})
+}
+
+function groupByTier(seats) {
+  return seats.reduce((tiers, seat) => {
+    tiers[seat.tier] = [...(tiers[seat.tier] || []), seat]
+    return tiers
   }, {})
 }
 
@@ -50,7 +58,7 @@ export default function SeatMap() {
     }
   }, [eventId, setSeats, updateSeat, setMyHold])
 
-  const rows = useMemo(() => groupByRow(seats), [seats])
+  const tiers = useMemo(() => groupByTier(seats), [seats])
 
   function handleSeatClick(seat) {
     setError('')
@@ -72,17 +80,34 @@ export default function SeatMap() {
       {error && <p className="mb-5 text-sm text-red-300">{error}</p>}
       <div className="mb-8 flex flex-wrap gap-4 text-xs text-slate-300"><span>🟩 Available</span><span>🟨 Held</span><span>🟦 Your hold</span><span>⬛ Booked</span></div>
       <div className="rounded-xl border border-slate-800 bg-slate-900 p-5 sm:p-8">
-        <div className="mb-10 rounded-full border border-orange-300/30 bg-orange-400/10 py-3 text-center text-sm text-orange-200">STAGE</div>
-        {Object.entries(rows).map(([row, rowSeats]) => (
-          <div key={row} className="mb-3 flex items-center gap-2 overflow-x-auto">
-            <span className="w-6 shrink-0 text-sm text-slate-400">{row}</span>
-            {rowSeats.map((seat) => {
-              const mine = myHold?.seatId === seat._id
-              const disabled = seat.status !== 'available' && !mine
-              return <button key={seat._id} onClick={() => handleSeatClick(seat)} disabled={disabled} title={`${seat.tier} · $${seat.price}`} className={`h-10 min-w-10 rounded-lg border px-2 text-xs transition ${mine ? 'border-blue-300 bg-blue-500 text-white' : seat.status === 'held' ? 'cursor-not-allowed border-yellow-300/40 bg-yellow-300/30 text-yellow-100' : seat.status === 'booked' ? 'cursor-not-allowed border-slate-700 bg-slate-800 text-slate-500' : 'border-emerald-300/40 bg-emerald-400/20 text-emerald-100 hover:bg-emerald-400/40'}`}>{seat.label}</button>
-            })}
-          </div>
-        ))}
+        <div className="mx-auto mb-10 max-w-2xl rounded-[2rem] border border-orange-300/40 bg-orange-400/10 py-4 text-center text-sm font-semibold tracking-[0.35em] text-orange-200 shadow-[0_0_35px_rgba(251,146,60,0.12)]">STAGE</div>
+        <div className="mx-auto flex max-w-5xl flex-col items-center gap-8">
+          {Object.entries(tiers).map(([tier, tierSeats]) => {
+            const rows = groupByRow(tierSeats)
+            const tierPrice = tierSeats[0]?.price
+            return <div key={tier} className="w-full rounded-2xl border border-slate-700/80 bg-slate-950/60 p-4 sm:p-6">
+              <div className="mb-5 flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 pb-4">
+                <div>
+                  <h2 className="text-lg font-semibold text-slate-100">{tier} section</h2>
+                  <p className="mt-1 text-xs text-slate-400">{tierSeats.length} seats{typeof tierPrice === 'number' ? ` · ${formatPrice(tierPrice)} each` : ''}</p>
+                </div>
+                <span className="rounded-full border border-emerald-300/30 bg-emerald-400/10 px-3 py-1 text-xs text-emerald-200">Available section</span>
+              </div>
+              <div className="flex flex-col items-center gap-3">
+                {Object.entries(rows).map(([row, rowSeats]) => <div key={row} className="flex w-full items-center justify-center gap-2 overflow-x-auto pb-1">
+                  <span className="w-6 shrink-0 text-center text-xs font-semibold text-slate-500">{row}</span>
+                  <div className="flex shrink-0 gap-2">
+                    {rowSeats.map((seat) => {
+                      const mine = myHold?.seatId === seat._id
+                      const disabled = seat.status !== 'available' && !mine
+                      return <button key={seat._id} onClick={() => handleSeatClick(seat)} disabled={disabled} title={`${seat.tier} · ${formatPrice(seat.price)}`} className={`h-10 min-w-10 rounded-lg border px-2 text-xs transition ${mine ? 'border-blue-300 bg-blue-500 text-white' : seat.status === 'held' ? 'cursor-not-allowed border-yellow-300/40 bg-yellow-300/30 text-yellow-100' : seat.status === 'booked' ? 'cursor-not-allowed border-slate-700 bg-slate-800 text-slate-500' : 'border-emerald-300/40 bg-emerald-400/20 text-emerald-100 hover:bg-emerald-400/40'}`}>{seat.label}</button>
+                    })}
+                  </div>
+                </div>)}
+              </div>
+            </div>
+          })}
+        </div>
         {!seats.length && !error && <p className="py-8 text-center text-slate-400">No seats have been generated for this event yet.</p>}
       </div>
     </section>
