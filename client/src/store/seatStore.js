@@ -2,7 +2,7 @@ import { create } from 'zustand'
 
 export const useSeatStore = create((set) => ({
   seats: [],
-  myHold: null,
+  myHolds: [],
   setSeats: (seats) => set({ seats }),
   updateSeat: (seatId, updates) => set((state) => ({
     seats: state.seats.map((seat) => seat._id === seatId ? {
@@ -11,6 +11,11 @@ export const useSeatStore = create((set) => ({
       ...(updates === 'available' || updates.status === 'available' ? { heldBy: null, holdExpiresAt: null } : {}),
     } : seat),
   })),
-  setMyHold: (myHold) => set({ myHold }),
-  clearMyHold: () => set({ myHold: null }),
+  addMyHold: (hold) => set((state) => ({
+    myHolds: [...state.myHolds.filter((item) => item.seatId !== hold.seatId), hold],
+  })),
+  removeMyHold: (seatId) => set((state) => ({
+    myHolds: state.myHolds.filter((hold) => hold.seatId !== seatId),
+  })),
+  clearMyHolds: () => set({ myHolds: [] }),
 }))

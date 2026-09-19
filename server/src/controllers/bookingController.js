@@ -9,7 +9,7 @@ exports.createBooking = async (req, res) => {
   const userId = req.user.id;
 
   if (!mongoose.isValidObjectId(eventId) || !Array.isArray(seatIds) || seatIds.length === 0
-    || seatIds.length > 20 || seatIds.some((id) => !mongoose.isValidObjectId(id))) {
+    || seatIds.some((id) => !mongoose.isValidObjectId(id))) {
     return res.status(400).json({ error: 'A valid event and one or more seat IDs are required' });
   }
   const uniqueSeatIds = [...new Set(seatIds.map((id) => id.toString()))];

@@ -1,11 +1,13 @@
 const mongoose = require('mongoose');
 const Event = require('../models/Event');
+const Seat = require('../models/Seat');
 const { generateSeats } = require('../services/seatGenerator');
 
 function validateEventInput({ title, venue, date, capacity, priceTiers }) {
   if (!title || !venue || !date || !Number.isInteger(Number(capacity)) || Number(capacity) < 1) {
     return 'Title, venue, date, and a positive integer capacity are required';
   }
+
   if (!Array.isArray(priceTiers) || priceTiers.length === 0) return 'At least one price tier is required';
   if (priceTiers.some((tier) => !tier.name || Number(tier.price) < 0 || !Number.isInteger(Number(tier.seatCount)) || Number(tier.seatCount) < 1)) {
     return 'Each price tier needs a name, non-negative price, and positive integer seat count';
@@ -14,6 +16,21 @@ function validateEventInput({ title, venue, date, capacity, priceTiers }) {
   if (tierSeats !== Number(capacity)) return 'Price tier seat counts must sum to capacity';
   if (Number.isNaN(new Date(date).getTime())) return 'A valid event date is required';
   return null;
+}
+
+function seatingConfigChanged(event, next) {
+  const currentTiers = event.priceTiers.map((tier) => ({
+    name: tier.name,
+    price: tier.price,
+    seatCount: tier.seatCount
+  }));
+  const nextTiers = next.priceTiers.map((tier) => ({
+    name: tier.name,
+    price: Number(tier.price),
+    seatCount: Number(tier.seatCount)
+  }));
+  return event.capacity !== Number(next.capacity)
+    || JSON.stringify(currentTiers) !== JSON.stringify(nextTiers);
 }
 
 exports.createEvent = async (req, res) => {
@@ -44,6 +61,22 @@ exports.updateEvent = async (req, res) => {
   const next = { ...event.toObject(), ...req.body };
   const error = validateEventInput(next);
   if (error) return res.status(400).json({ error });
+  const status = req.body.status || event.status;
+  const requiresSeatReset = event.status === 'published'
+    && status === 'published'
+    && seatingConfigChanged(event, next);
+
+  if (requiresSeatReset) {
+    const seatsInUse = await Seat.exists({
+      event: event._id,
+      status: { $in: ['held', 'booked'] }
+    });
+    if (seatsInUse) {
+      return res.status(409).json({
+        error: 'This event has held or booked seats. Release or cancel them before changing capacity or price tiers.'
+      });
+    }
+  }
 
   Object.assign(event, {
     title: req.body.title,
@@ -57,9 +90,13 @@ exports.updateEvent = async (req, res) => {
       price: Number(tier.price),
       seatCount: Number(tier.seatCount)
     })),
-    status: req.body.status || event.status
+    status
   });
   await event.save();
+  if (requiresSeatReset) {
+    await Seat.deleteMany({ event: event._id });
+    await generateSeats(event);
+  }
   res.json(event);
 };
 
@@ -68,9 +105,16 @@ exports.publishEvent = async (req, res) => {
   if (!event) return res.status(404).json({ error: 'Event not found' });
   if (event.status === 'published') return res.status(400).json({ error: 'Already published' });
 
-  event.status = 'published';
-  await event.save();
-  await generateSeats(event);
+  const error = validateEventInput(event);
+  if (error) return res.status(400).json({ error });
+
+  try {
+    await generateSeats(event);
+    event.status = 'published';
+    await event.save();
+  } catch (generationError) {
+    return res.status(409).json({ error: `Unable to generate seats: ${generationError.message}` });
+  }
   res.json(event);
 };
 

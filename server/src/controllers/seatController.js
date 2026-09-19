@@ -14,7 +14,7 @@ exports.getSeatsForEvent = async (req, res) => {
   let seats = await Seat.find({ event: event._id }).sort({ row: 1, label: 1 });
   if (seats.length === 0) {
     await generateSeats(event);
-    seats = await Seat.find({ event: event._id }).sort({ row: 1, label: 1 });
   }
+  seats = await Seat.find({ event: event._id }).sort({ row: 1, label: 1 });
   res.json(seats);
 };

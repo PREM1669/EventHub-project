@@ -48,6 +48,9 @@ export const usePublishEvent = () => {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: (id) => api.post(`/events/${id}/publish`).then((response) => response.data),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['myEvents'] }),
+    onSuccess: (_, id) => {
+      queryClient.invalidateQueries({ queryKey: ['myEvents'] })
+      queryClient.invalidateQueries({ queryKey: ['event', id] })
+    },
   })
 }

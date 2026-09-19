@@ -6,7 +6,7 @@ const mongoose = require('mongoose');
 const Event = require('./models/Event');
 const Seat = require('./models/Seat');
 const User = require('./models/User');
-const { generateSeats } = require('./services/seatGenerator');
+const { arrangeSeats, generateSeats } = require('./services/seatGenerator');
 
 dns.setServers(
   (process.env.MONGO_DNS_SERVERS || '1.1.1.1,8.8.8.8')
@@ -50,8 +50,8 @@ async function seed() {
       date: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000),
       capacity: 120,
       priceTiers: [
-        { name: 'General', price: 499, seatCount: 90 },
-        { name: 'VIP', price: 1299, seatCount: 30 }
+        { name: 'General', price: 500, seatCount: 90 },
+        { name: 'VIP', price: 1300, seatCount: 30 }
       ]
     },
     {
@@ -62,8 +62,8 @@ async function seed() {
       date: new Date(Date.now() + 28 * 24 * 60 * 60 * 1000),
       capacity: 200,
       priceTiers: [
-        { name: 'General', price: 349, seatCount: 160 },
-        { name: 'Premium', price: 849, seatCount: 40 }
+        { name: 'General', price: 350, seatCount: 160 },
+        { name: 'Premium', price: 890, seatCount: 40 }
       ]
     }
   ];
@@ -75,6 +75,7 @@ async function seed() {
       { upsert: true, returnDocument: 'after', setDefaultsOnInsert: true }
     );
     await generateSeats(savedEvent);
+    await arrangeSeats(savedEvent);
     for (const tier of event.priceTiers) {
       await Seat.updateMany({ event: savedEvent._id, tier: tier.name }, { price: tier.price });
     }

@@ -10,6 +10,7 @@ import { useAuthStore } from './store/authStore'
 import { formatPrice } from './utils/currency'
 
 const inputClass = 'w-full rounded-lg bg-slate-800 px-4 py-3 outline-none ring-cyan-400 focus:ring-2'
+const MAX_SEATING_CAPACITY = 260
 
 function formatDate(date) {
   return new Date(date).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' })
@@ -130,6 +131,8 @@ function OrganizerEvents() {
       </div>
       {isLoading && <p className="text-slate-400">Loading your events...</p>}
       {isError && <p className="text-red-400">Unable to load your events.</p>}
+      {publishEvent.isError && <p className="mb-4 rounded-lg border border-red-400/30 bg-red-400/10 p-3 text-sm text-red-200">{publishEvent.error.response?.data?.error || 'Unable to publish this event.'}</p>}
+      {updateEvent.isError && <p className="mb-4 rounded-lg border border-red-400/30 bg-red-400/10 p-3 text-sm text-red-200">{updateEvent.error.response?.data?.error || 'Unable to update this event.'}</p>}
       {!isLoading && events.length === 0 && <p className="rounded-xl border border-dashed border-slate-700 p-8 text-center text-slate-400">You have not created any events yet.</p>}
       <div className="space-y-4">
         {events.map((event) => (
@@ -171,12 +174,16 @@ function EventForm() {
   const pending = createEvent.isPending || updateEvent.isPending
 
   function updateTier(index, field, value) {
-    setForm({ ...form, priceTiers: form.priceTiers.map((tier, tierIndex) => tierIndex === index ? { ...tier, [field]: value } : tier) })
+    setForm((current) => ({ ...current, priceTiers: current.priceTiers.map((tier, tierIndex) => tierIndex === index ? { ...tier, [field]: value } : tier) }))
   }
 
   function submit(event) {
     event.preventDefault()
     setError('')
+    if (Number(form.capacity) > MAX_SEATING_CAPACITY) {
+      setError(`Capacity cannot exceed ${MAX_SEATING_CAPACITY} seats for the current seating chart (26 rows x 10 seats).`)
+      return
+    }
     if (totalSeats !== Number(form.capacity)) {
       setError('Price tier seat counts must equal capacity.')
       return
@@ -194,24 +201,24 @@ function EventForm() {
       <p className="text-sm uppercase tracking-widest text-cyan-400">Organizer</p>
       <h1 className="mt-2 text-3xl font-bold">{id ? 'Edit event' : 'Create event'}</h1>
       <form className="mt-8 space-y-5 rounded-xl border border-slate-800 bg-slate-900 p-6" onSubmit={submit}>
-        <input required className={inputClass} placeholder="Event title" value={form.title} onChange={(event) => setForm({ ...form, title: event.target.value })} />
-        <textarea className={inputClass} placeholder="Description" rows="4" value={form.description} onChange={(event) => setForm({ ...form, description: event.target.value })} />
+        <input required className={inputClass} placeholder="Event title" value={form.title} onChange={(event) => setForm((current) => ({ ...current, title: event.target.value }))} />
+        <textarea className={inputClass} placeholder="Description" rows="4" value={form.description} onChange={(event) => setForm((current) => ({ ...current, description: event.target.value }))} />
         <div className="grid gap-4 md:grid-cols-2">
-          <select className={inputClass} value={form.category} onChange={(event) => setForm({ ...form, category: event.target.value })}><option>General</option><option>Music</option><option>Technology</option><option>Sports</option><option>Business</option></select>
-          <input required className={inputClass} placeholder="Venue" value={form.venue} onChange={(event) => setForm({ ...form, venue: event.target.value })} />
-          <input required className={inputClass} type="datetime-local" value={form.date} onChange={(event) => setForm({ ...form, date: event.target.value })} />
-          <input required min="1" className={inputClass} type="number" placeholder="Capacity" value={form.capacity} onChange={(event) => setForm({ ...form, capacity: event.target.value })} />
+        <select className={inputClass} value={form.category} onChange={(event) => setForm((current) => ({ ...current, category: event.target.value }))}><option>General</option><option>Music</option><option>Technology</option><option>Sports</option><option>Business</option></select>
+        <input required className={inputClass} placeholder="Venue" value={form.venue} onChange={(event) => setForm((current) => ({ ...current, venue: event.target.value }))} />
+        <input required className={inputClass} type="datetime-local" value={form.date} onChange={(event) => setForm((current) => ({ ...current, date: event.target.value }))} />
+        <div><input required min="1" max={MAX_SEATING_CAPACITY} className={inputClass} type="text" inputMode="numeric" placeholder="Capacity" value={form.capacity} onChange={(event) => setForm((current) => ({ ...current, capacity: event.target.value.replace(/\D/g, '') }))} /><p className="mt-2 text-xs text-slate-400">Maximum {MAX_SEATING_CAPACITY} seats: 26 rows × 10 seats.</p></div>
         </div>
         <div>
-          <div className="mb-3 flex items-center justify-between"><h2 className="text-lg font-semibold">Price tiers</h2><button type="button" className="text-sm text-cyan-300" onClick={() => setForm({ ...form, priceTiers: [...form.priceTiers, { name: '', price: 0, seatCount: 1 }] })}>+ Add tier</button></div>
+          <div className="mb-3 flex items-center justify-between"><h2 className="text-lg font-semibold">Price tiers</h2><button type="button" className="text-sm text-cyan-300" onClick={() => setForm((current) => ({ ...current, priceTiers: [...current.priceTiers, { name: '', price: 0, seatCount: 1 }] }))}>+ Add tier</button></div>
           <div className="space-y-3">
-            {form.priceTiers.map((tier, index) => <div key={index} className="grid gap-2 md:grid-cols-[1fr_120px_120px_auto]"><input required className={inputClass} placeholder="Tier name" value={tier.name} onChange={(event) => updateTier(index, 'name', event.target.value)} /><input required min="0" className={inputClass} type="number" placeholder="Price" value={tier.price} onChange={(event) => updateTier(index, 'price', event.target.value)} /><input required min="1" className={inputClass} type="number" placeholder="Seats" value={tier.seatCount} onChange={(event) => updateTier(index, 'seatCount', event.target.value)} /><button type="button" disabled={form.priceTiers.length === 1} className="rounded-lg px-3 text-red-300 disabled:opacity-30" onClick={() => setForm({ ...form, priceTiers: form.priceTiers.filter((_, tierIndex) => tierIndex !== index) })}>Remove</button></div>)}
+            {form.priceTiers.map((tier, index) => <div key={index} className="grid gap-2 md:grid-cols-[1fr_120px_120px_auto]"><input required className={inputClass} placeholder="Tier name" value={tier.name} onChange={(event) => updateTier(index, 'name', event.target.value)} /><input required min="0" className={inputClass} type="number" placeholder="Price" value={tier.price} onChange={(event) => updateTier(index, 'price', event.target.value)} /><input required min="1" className={inputClass} type="number" placeholder="Seats" value={tier.seatCount} onChange={(event) => updateTier(index, 'seatCount', event.target.value)} /><button type="button" disabled={form.priceTiers.length === 1} className="rounded-lg px-3 text-red-300 disabled:opacity-30" onClick={() => setForm((current) => ({ ...current, priceTiers: current.priceTiers.filter((_, tierIndex) => tierIndex !== index) }))}>Remove</button></div>)}
           </div>
           <p className={`mt-3 text-sm ${totalSeats === Number(form.capacity) ? 'text-emerald-400' : 'text-amber-300'}`}>Tier seats: {totalSeats} / Capacity: {form.capacity}</p>
         </div>
         {error && <p className="text-sm text-red-400">{error}</p>}
         {mutation.isError && <p className="text-sm text-red-400">{mutation.error.response?.data?.error || 'Unable to save event.'}</p>}
-        <button disabled={pending || totalSeats !== Number(form.capacity)} className="rounded-lg bg-cyan-400 px-5 py-3 font-semibold text-slate-950 disabled:opacity-50">{pending ? 'Saving...' : 'Save event'}</button>
+        <button disabled={pending || totalSeats !== Number(form.capacity) || Number(form.capacity) > MAX_SEATING_CAPACITY} className="rounded-lg bg-cyan-400 px-5 py-3 font-semibold text-slate-950 disabled:opacity-50">{pending ? 'Saving...' : 'Save event'}</button>
       </form>
     </section>
   )
