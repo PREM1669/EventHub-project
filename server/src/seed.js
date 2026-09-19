@@ -5,6 +5,7 @@ const dns = require('dns');
 const mongoose = require('mongoose');
 const Event = require('./models/Event');
 const User = require('./models/User');
+const { generateSeats } = require('./services/seatGenerator');
 
 dns.setServers(
   (process.env.MONGO_DNS_SERVERS || '1.1.1.1,8.8.8.8')
@@ -67,11 +68,12 @@ async function seed() {
   ];
 
   for (const event of events) {
-    await Event.findOneAndUpdate(
+    const savedEvent = await Event.findOneAndUpdate(
       { organizer: organizer._id, title: event.title },
       { ...event, organizer: organizer._id, status: 'published' },
       { upsert: true, returnDocument: 'after', setDefaultsOnInsert: true }
     );
+    await generateSeats(savedEvent);
   }
 
   console.log('Seed complete.');
