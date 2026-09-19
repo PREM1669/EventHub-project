@@ -7,6 +7,7 @@ import BookingSummary from './pages/attendee/BookingSummary'
 import Confirmation from './pages/attendee/Confirmation'
 import ProtectedRoute from './components/ProtectedRoute'
 import { useAuthStore } from './store/authStore'
+import { formatPrice } from './utils/currency'
 
 const inputClass = 'w-full rounded-lg bg-slate-800 px-4 py-3 outline-none ring-cyan-400 focus:ring-2'
 
@@ -103,7 +104,7 @@ function EventDetail() {
       </div>
       <h2 className="mt-8 text-xl font-semibold">Price tiers</h2>
       <div className="mt-3 space-y-2">
-        {event.priceTiers.map((tier) => <div key={tier.name} className="flex justify-between rounded-lg bg-slate-800 p-3"><span>{tier.name} · {tier.seatCount} seats</span><span>${tier.price.toFixed(2)}</span></div>)}
+        {event.priceTiers.map((tier) => <div key={tier.name} className="flex justify-between rounded-lg bg-slate-800 p-3"><span>{tier.name} · {tier.seatCount} seats</span><span>{formatPrice(tier.price)}</span></div>)}
       </div>
       <Link to={`/attendee/events/${event._id}/seats`} className="mt-8 inline-block rounded-lg bg-cyan-400 px-5 py-3 font-semibold text-slate-950">Select Seats</Link>
     </section>
