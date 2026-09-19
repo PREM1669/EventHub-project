@@ -9,19 +9,25 @@ const { Server } = require('socket.io');
 const authRoutes = require('./routes/authRoutes');
 const portalRoutes = require('./routes/portalRoutes');
 const eventRoutes = require('./routes/eventRoutes');
+const bookingRoutes = require('./routes/bookingRoutes');
 const { registerSeatSocket } = require('./sockets/seatSocket');
 
 const app = express();
 app.use(cors());
 app.use(express.json());
 
+const server = http.createServer(app);
+const io = new Server(server, { cors: { origin: '*' } });
+
 app.get('/api/health', (req, res) => res.json({ status: 'ok' }));
+app.use((req, res, next) => {
+  req.io = io;
+  next();
+});
 app.use('/api/auth', authRoutes);
 app.use('/api/portal', portalRoutes);
 app.use('/api/events', eventRoutes);
-
-const server = http.createServer(app);
-const io = new Server(server, { cors: { origin: '*' } });
+app.use('/api/bookings', bookingRoutes);
 
 registerSeatSocket(io);
 

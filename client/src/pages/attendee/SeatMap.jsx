@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { Link, useParams } from 'react-router-dom'
+import { Link, useNavigate, useParams } from 'react-router-dom'
 import api from '../../api/axios'
 import { socket } from '../../sockets/socket'
 import { useAuthStore } from '../../store/authStore'
@@ -15,6 +15,7 @@ function groupByRow(seats) {
 
 export default function SeatMap() {
   const { eventId } = useParams()
+  const navigate = useNavigate()
   const { user } = useAuthStore()
   const { seats, setSeats, updateSeat, myHold, setMyHold, clearMyHold } = useSeatStore()
   const [error, setError] = useState('')
@@ -32,17 +33,20 @@ export default function SeatMap() {
 
     socket.emit('join-event', eventId)
     const onSeatUpdated = ({ seatId, status, heldBy, holdExpiresAt }) => updateSeat(seatId, { status, heldBy, holdExpiresAt })
+    const onSeatsBooked = ({ seatIds }) => seatIds.forEach((seatId) => updateSeat(seatId, { status: 'booked', heldBy: null, holdExpiresAt: null }))
     const onHoldSuccess = ({ seatId, expiresAt }) => setMyHold({ seatId, expiresAt })
     const onHoldFailed = ({ reason }) => setError(reason)
     socket.on('seat-updated', onSeatUpdated)
     socket.on('hold-success', onHoldSuccess)
     socket.on('hold-failed', onHoldFailed)
+    socket.on('seats-booked', onSeatsBooked)
     return () => {
       mounted = false
       socket.emit('leave-event', eventId)
       socket.off('seat-updated', onSeatUpdated)
       socket.off('hold-success', onHoldSuccess)
       socket.off('hold-failed', onHoldFailed)
+      socket.off('seats-booked', onSeatsBooked)
     }
   }, [eventId, setSeats, updateSeat, setMyHold])
 
@@ -64,6 +68,7 @@ export default function SeatMap() {
         <p className="mt-2 text-slate-400">Your selected seat is held for two minutes.</p>
       </div>
       {myHold && <HoldTimer expiresAt={myHold.expiresAt} onExpire={releaseHold} />}
+      {myHold && <button onClick={() => navigate(`/attendee/events/${eventId}/booking`)} className="mb-6 rounded-lg bg-cyan-400 px-5 py-3 font-semibold text-slate-950">Continue to booking</button>}
       {error && <p className="mb-5 text-sm text-red-300">{error}</p>}
       <div className="mb-8 flex flex-wrap gap-4 text-xs text-slate-300"><span>🟩 Available</span><span>🟨 Held</span><span>🟦 Your hold</span><span>⬛ Booked</span></div>
       <div className="rounded-xl border border-slate-800 bg-slate-900 p-5 sm:p-8">

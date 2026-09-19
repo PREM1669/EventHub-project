@@ -3,6 +3,8 @@ import { Link, Navigate, Route, Routes, useLocation, useNavigate, useParams, use
 import api from './api/axios'
 import { useCreateEvent, useDeleteEvent, useEvent, useEvents, useMyEvents, usePublishEvent, useUpdateEvent } from './api/events'
 import SeatMap from './pages/attendee/SeatMap'
+import BookingSummary from './pages/attendee/BookingSummary'
+import Confirmation from './pages/attendee/Confirmation'
 import ProtectedRoute from './components/ProtectedRoute'
 import { useAuthStore } from './store/authStore'
 
@@ -242,7 +244,7 @@ function Navigation() {
 }
 
 function App() {
-  return <div className="app-shell"><Navigation /><main><Routes><Route path="/" element={<Home />} /><Route path="/login" element={<AuthForm mode="login" />} /><Route path="/register" element={<AuthForm mode="register" />} /><Route path="/events/:id" element={<EventDetail />} /><Route path="/attendee/events/:eventId/seats" element={<ProtectedRoute allowedRoles={['attendee']}><SeatMap /></ProtectedRoute>} /><Route path="/organizer/*" element={<ProtectedRoute allowedRoles={['organizer']}><Routes><Route path="dashboard" element={<Navigate to="/organizer/events" replace />} /><Route path="events" element={<OrganizerEvents />} /><Route path="events/new" element={<EventForm />} /><Route path="events/:id/edit" element={<EventForm />} /><Route path="*" element={<Navigate to="events" replace />} /></Routes></ProtectedRoute>} /><Route path="/attendee/*" element={<ProtectedRoute allowedRoles={['attendee']}><Routes><Route path="discover" element={<EventDiscovery />} /><Route path="*" element={<Navigate to="discover" replace />} /></Routes></ProtectedRoute>} /></Routes></main></div>
+  return <div className="app-shell"><Navigation /><main><Routes><Route path="/" element={<Home />} /><Route path="/login" element={<AuthForm mode="login" />} /><Route path="/register" element={<AuthForm mode="register" />} /><Route path="/events/:id" element={<EventDetail />} /><Route path="/attendee/events/:eventId/seats" element={<ProtectedRoute allowedRoles={['attendee']}><SeatMap /></ProtectedRoute>} /><Route path="/attendee/events/:eventId/booking" element={<ProtectedRoute allowedRoles={['attendee']}><BookingSummary /></ProtectedRoute>} /><Route path="/attendee/confirmation/:bookingId" element={<ProtectedRoute allowedRoles={['attendee']}><Confirmation /></ProtectedRoute>} /><Route path="/organizer/*" element={<ProtectedRoute allowedRoles={['organizer']}><Routes><Route path="dashboard" element={<Navigate to="/organizer/events" replace />} /><Route path="events" element={<OrganizerEvents />} /><Route path="events/new" element={<EventForm />} /><Route path="events/:id/edit" element={<EventForm />} /><Route path="*" element={<Navigate to="events" replace />} /></Routes></ProtectedRoute>} /><Route path="/attendee/*" element={<ProtectedRoute allowedRoles={['attendee']}><Routes><Route path="discover" element={<EventDiscovery />} /><Route path="*" element={<Navigate to="discover" replace />} /></Routes></ProtectedRoute>} /></Routes></main></div>
 }
 
 export default App
