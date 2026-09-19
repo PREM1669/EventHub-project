@@ -5,9 +5,11 @@ import { useCreateEvent, useDeleteEvent, useEvent, useEvents, useMyEvents, usePu
 import SeatMap from './pages/attendee/SeatMap'
 import BookingSummary from './pages/attendee/BookingSummary'
 import Confirmation from './pages/attendee/Confirmation'
+import Dashboard from './pages/organizer/Dashboard'
 import ProtectedRoute from './components/ProtectedRoute'
 import { useAuthStore } from './store/authStore'
 import { formatPrice } from './utils/currency'
+import { socket } from './sockets/socket'
 
 const inputClass = 'w-full rounded-lg bg-slate-800 px-4 py-3 outline-none ring-cyan-400 focus:ring-2'
 const MAX_SEATING_CAPACITY = 260
@@ -90,6 +92,17 @@ function EventDiscovery() {
 function EventDetail() {
   const { id } = useParams()
   const { data: event, isLoading, isError } = useEvent(id)
+  const [announcements, setAnnouncements] = useState([])
+  useEffect(() => {
+    if (!id) return undefined
+    socket.emit('join-event', id)
+    const handleAnnouncement = (announcement) => setAnnouncements((current) => [announcement, ...current])
+    socket.on('announcement', handleAnnouncement)
+    return () => {
+      socket.emit('leave-event', id)
+      socket.off('announcement', handleAnnouncement)
+    }
+  }, [id])
   if (isLoading) return <p className="text-slate-400">Loading event...</p>
   if (isError || !event) return <p className="text-red-400">Event not found.</p>
   return (
@@ -98,6 +111,7 @@ function EventDetail() {
       <p className="mt-8 text-sm uppercase tracking-widest text-cyan-400">{event.category}</p>
       <h1 className="mt-2 text-4xl font-bold">{event.title}</h1>
       <p className="mt-5 whitespace-pre-wrap text-slate-300">{event.description || 'No description provided.'}</p>
+      {announcements.length > 0 && <div className="mt-8 rounded-xl border border-orange-300/20 bg-orange-400/10 p-4"><h2 className="font-semibold text-orange-200">Latest announcements</h2>{announcements.map((announcement, index) => <p key={`${announcement.sentAt}-${index}`} className="mt-2 text-sm text-orange-100">{announcement.message}</p>)}</div>}
       <div className="mt-8 grid gap-4 text-sm text-slate-300 md:grid-cols-2">
         <p><strong>When:</strong> {formatDate(event.date)}</p>
         <p><strong>Where:</strong> {event.venue}</p>
@@ -143,6 +157,7 @@ function OrganizerEvents() {
             </div>
             <div className="mt-4 flex flex-wrap gap-3 text-sm">
               <Link className="rounded-lg border border-slate-700 px-3 py-2" to={`/organizer/events/${event._id}/edit`}>Edit</Link>
+              {event.status === 'published' && <Link className="rounded-lg border border-orange-300/40 px-3 py-2 text-orange-200" to={`/organizer/events/${event._id}/dashboard`}>Dashboard</Link>}
               <button disabled={publishEvent.isPending || updateEvent.isPending} className="rounded-lg border border-cyan-700 px-3 py-2 text-cyan-300 disabled:opacity-50" onClick={() => togglePublish(event)}>{event.status === 'published' ? 'Unpublish' : 'Publish'}</button>
               <button className="rounded-lg border border-red-900 px-3 py-2 text-red-300" onClick={() => { if (window.confirm('Delete this event?')) deleteEvent.mutate(event._id) }}>Delete</button>
             </div>
@@ -252,7 +267,7 @@ function Navigation() {
 }
 
 function App() {
-  return <div className="app-shell"><Navigation /><main><Routes><Route path="/" element={<Home />} /><Route path="/login" element={<AuthForm mode="login" />} /><Route path="/register" element={<AuthForm mode="register" />} /><Route path="/events/:id" element={<EventDetail />} /><Route path="/attendee/events/:eventId/seats" element={<ProtectedRoute allowedRoles={['attendee']}><SeatMap /></ProtectedRoute>} /><Route path="/attendee/events/:eventId/booking" element={<ProtectedRoute allowedRoles={['attendee']}><BookingSummary /></ProtectedRoute>} /><Route path="/attendee/confirmation/:bookingId" element={<ProtectedRoute allowedRoles={['attendee']}><Confirmation /></ProtectedRoute>} /><Route path="/organizer/*" element={<ProtectedRoute allowedRoles={['organizer']}><Routes><Route path="dashboard" element={<Navigate to="/organizer/events" replace />} /><Route path="events" element={<OrganizerEvents />} /><Route path="events/new" element={<EventForm />} /><Route path="events/:id/edit" element={<EventForm />} /><Route path="*" element={<Navigate to="events" replace />} /></Routes></ProtectedRoute>} /><Route path="/attendee/*" element={<ProtectedRoute allowedRoles={['attendee']}><Routes><Route path="discover" element={<EventDiscovery />} /><Route path="*" element={<Navigate to="discover" replace />} /></Routes></ProtectedRoute>} /></Routes></main></div>
+  return <div className="app-shell"><Navigation /><main><Routes><Route path="/" element={<Home />} /><Route path="/login" element={<AuthForm mode="login" />} /><Route path="/register" element={<AuthForm mode="register" />} /><Route path="/events/:id" element={<EventDetail />} /><Route path="/attendee/events/:eventId/seats" element={<ProtectedRoute allowedRoles={['attendee']}><SeatMap /></ProtectedRoute>} /><Route path="/attendee/events/:eventId/booking" element={<ProtectedRoute allowedRoles={['attendee']}><BookingSummary /></ProtectedRoute>} /><Route path="/attendee/confirmation/:bookingId" element={<ProtectedRoute allowedRoles={['attendee']}><Confirmation /></ProtectedRoute>} /><Route path="/organizer/*" element={<ProtectedRoute allowedRoles={['organizer']}><Routes><Route path="dashboard" element={<Navigate to="/organizer/events" replace />} /><Route path="events" element={<OrganizerEvents />} /><Route path="events/new" element={<EventForm />} /><Route path="events/:eventId/dashboard" element={<Dashboard />} /><Route path="events/:id/edit" element={<EventForm />} /><Route path="*" element={<Navigate to="events" replace />} /></Routes></ProtectedRoute>} /><Route path="/attendee/*" element={<ProtectedRoute allowedRoles={['attendee']}><Routes><Route path="discover" element={<EventDiscovery />} /><Route path="*" element={<Navigate to="discover" replace />} /></Routes></ProtectedRoute>} /></Routes></main></div>
 }
 
 export default App

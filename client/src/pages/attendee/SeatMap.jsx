@@ -29,6 +29,7 @@ export default function SeatMap() {
   const { user } = useAuthStore()
   const { seats, setSeats, updateSeat, myHolds, addMyHold, removeMyHold, clearMyHolds } = useSeatStore()
   const [error, setError] = useState('')
+  const [announcements, setAnnouncements] = useState([])
 
   const releaseHolds = useCallback(() => {
     myHolds.forEach((hold) => socket.emit('release-seat', { eventId, seatId: hold.seatId, userId: user.id }))
@@ -57,10 +58,12 @@ export default function SeatMap() {
     const onSeatsBooked = ({ seatIds }) => seatIds.forEach((seatId) => updateSeat(seatId, { status: 'booked', heldBy: null, holdExpiresAt: null }))
     const onHoldSuccess = ({ seatId, expiresAt }) => addMyHold({ seatId, expiresAt })
     const onHoldFailed = ({ reason }) => setError(reason)
+    const onAnnouncement = (announcement) => setAnnouncements((current) => [announcement, ...current])
     socket.on('seat-updated', onSeatUpdated)
     socket.on('hold-success', onHoldSuccess)
     socket.on('hold-failed', onHoldFailed)
     socket.on('seats-booked', onSeatsBooked)
+    socket.on('announcement', onAnnouncement)
     return () => {
       mounted = false
       socket.emit('leave-event', eventId)
@@ -68,6 +71,7 @@ export default function SeatMap() {
       socket.off('hold-success', onHoldSuccess)
       socket.off('hold-failed', onHoldFailed)
       socket.off('seats-booked', onSeatsBooked)
+      socket.off('announcement', onAnnouncement)
     }
   }, [eventId, setSeats, updateSeat, addMyHold, removeMyHold])
 
@@ -97,6 +101,7 @@ export default function SeatMap() {
       {myHolds.length > 0 && <HoldTimer expiresAt={Math.min(...myHolds.map((hold) => new Date(hold.expiresAt).getTime()))} onExpire={releaseExpiredHolds} />}
       {myHolds.length > 0 && <div className="mb-6 flex flex-wrap items-center gap-3"><span className="text-sm text-slate-300">{myHolds.length} seat{myHolds.length === 1 ? '' : 's'} selected</span><button onClick={() => navigate(`/attendee/events/${eventId}/booking`)} className="rounded-lg bg-cyan-400 px-5 py-3 font-semibold text-slate-950">Continue to booking</button><button onClick={releaseHolds} className="rounded-lg border border-red-300/40 px-4 py-3 text-sm text-red-200">Clear selection</button></div>}
       {error && <p className="mb-5 text-sm text-red-300">{error}</p>}
+      {announcements.length > 0 && <div className="mb-6 rounded-xl border border-orange-300/30 bg-orange-400/10 p-4"><div className="flex items-center justify-between gap-3"><h2 className="font-semibold text-orange-200">Live announcements</h2><span className="flex items-center gap-2 text-xs text-orange-100"><span className="h-2 w-2 animate-pulse rounded-full bg-orange-300" />Live</span></div><div className="mt-3 space-y-2">{announcements.map((announcement, index) => <div key={`${announcement.sentAt}-${index}`} className="rounded-lg border border-orange-300/20 bg-black/20 p-3 text-sm text-orange-50"><p>{announcement.message}</p><p className="mt-1 text-xs text-orange-200/70">{new Date(announcement.sentAt).toLocaleString()}</p></div>)}</div></div>}
       <div className="mb-8 flex flex-wrap gap-x-5 gap-y-3 text-xs text-slate-300">
         <span className="inline-flex items-center gap-2"><span className="h-3 w-3 rounded border border-emerald-300/40 bg-emerald-400/20" />Available</span>
         <span className="inline-flex items-center gap-2"><span className="h-3 w-3 rounded border border-yellow-300/40 bg-yellow-300/30" />Held</span>
