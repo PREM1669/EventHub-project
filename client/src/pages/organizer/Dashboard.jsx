@@ -15,16 +15,24 @@ export default function Dashboard() {
   const sendAnnouncement = useSendAnnouncement(eventId)
   const [message, setMessage] = useState('')
   const [liveAnnouncements, setLiveAnnouncements] = useState([])
+  const [checkedInCount, setCheckedInCount] = useState(0)
 
   useEffect(() => {
     socket.emit('join-event', eventId)
     const handleAnnouncement = (announcement) => setLiveAnnouncements((current) => [announcement, ...current])
+    const handleCheckin = ({ checkedInCount: count }) => setCheckedInCount(count)
     socket.on('announcement', handleAnnouncement)
+    socket.on('checkin-update', handleCheckin)
     return () => {
       socket.emit('leave-event', eventId)
       socket.off('announcement', handleAnnouncement)
+      socket.off('checkin-update', handleCheckin)
     }
   }, [eventId])
+
+  useEffect(() => {
+    if (analytics) setCheckedInCount(analytics.checkedInCount || 0)
+  }, [analytics])
 
   const tiers = useMemo(() => analytics?.tierBreakdown || [], [analytics])
   const maxRevenue = Math.max(...tiers.map((tier) => tier.revenue), 1)
@@ -49,9 +57,9 @@ export default function Dashboard() {
     <Link className="text-sm text-orange-300" to="/organizer/events">← Back to events</Link>
     <div className="mt-6 flex flex-wrap items-end justify-between gap-4">
       <div><p className="text-sm uppercase tracking-widest text-orange-300">Organizer dashboard</p><h1 className="mt-2 text-3xl font-bold">{event?.title || 'Event dashboard'}</h1></div>
-      {event && <button onClick={downloadRoster} className="rounded-lg border border-orange-300/40 px-4 py-2 text-sm text-orange-200">Export roster CSV</button>}
+      {event && <div className="flex flex-wrap gap-3"><Link to={`/organizer/events/${eventId}/check-in`} className="rounded-lg bg-cyan-400 px-4 py-2 text-sm font-semibold text-slate-950">QR check-in</Link><button onClick={downloadRoster} className="rounded-lg border border-orange-300/40 px-4 py-2 text-sm text-orange-200">Export roster CSV</button></div>}
     </div>
-    {analytics && <div className="mt-8 grid gap-4 sm:grid-cols-3"><Metric label="Revenue" value={formatPrice(analytics.revenue)} /><Metric label="Tickets sold" value={`${analytics.ticketsSold}/${analytics.capacity}`} /><Metric label="Sold" value={`${analytics.soldPercent.toFixed(1)}%`} /></div>}
+    {analytics && <div className="mt-8 grid gap-4 sm:grid-cols-4"><Metric label="Revenue" value={formatPrice(analytics.revenue)} /><Metric label="Tickets sold" value={`${analytics.ticketsSold}/${analytics.capacity}`} /><Metric label="Sold" value={`${analytics.soldPercent.toFixed(1)}%`} /><Metric label="Checked in" value={`${checkedInCount}/${analytics.ticketsSold}`} /></div>}
     <div className="mt-8 grid gap-6 lg:grid-cols-[1fr_1.4fr]">
       <div className="rounded-xl border border-slate-800 bg-slate-900 p-6">
         <h2 className="text-xl font-semibold">Revenue by tier</h2>

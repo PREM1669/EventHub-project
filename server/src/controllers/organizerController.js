@@ -2,6 +2,7 @@ const mongoose = require('mongoose');
 const Announcement = require('../models/Announcement');
 const Booking = require('../models/Booking');
 const Event = require('../models/Event');
+const Ticket = require('../models/Ticket');
 
 async function findOwnedEvent(eventId, organizerId) {
   if (!mongoose.isValidObjectId(eventId)) return null;
@@ -71,11 +72,14 @@ exports.getAnalytics = async (req, res) => {
   ]);
 
   const ticketsSold = stats?.ticketsSold || 0;
+  const confirmedBookingIds = await Booking.find({ event: event._id, status: 'confirmed' }).distinct('_id');
+  const checkedInCount = await Ticket.countDocuments({ booking: { $in: confirmedBookingIds }, checkedIn: true });
   res.json({
     revenue: stats?.revenue || 0,
     ticketsSold,
     capacity: event.capacity,
     soldPercent: event.capacity ? (ticketsSold / event.capacity) * 100 : 0,
+    checkedInCount,
     tierBreakdown
   });
 };

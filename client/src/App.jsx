@@ -5,7 +5,9 @@ import { useCreateEvent, useDeleteEvent, useEvent, useEvents, useMyEvents, usePu
 import SeatMap from './pages/attendee/SeatMap'
 import BookingSummary from './pages/attendee/BookingSummary'
 import Confirmation from './pages/attendee/Confirmation'
+import MyBookings from './pages/attendee/MyBookings'
 import Dashboard from './pages/organizer/Dashboard'
+import CheckIn from './pages/organizer/CheckIn'
 import ProtectedRoute from './components/ProtectedRoute'
 import { useAuthStore } from './store/authStore'
 import { formatPrice } from './utils/currency'
@@ -157,7 +159,7 @@ function OrganizerEvents() {
             </div>
             <div className="mt-4 flex flex-wrap gap-3 text-sm">
               <Link className="rounded-lg border border-slate-700 px-3 py-2" to={`/organizer/events/${event._id}/edit`}>Edit</Link>
-              {event.status === 'published' && <Link className="rounded-lg border border-orange-300/40 px-3 py-2 text-orange-200" to={`/organizer/events/${event._id}/dashboard`}>Dashboard</Link>}
+              {event.status === 'published' && <><Link className="rounded-lg border border-orange-300/40 px-3 py-2 text-orange-200" to={`/organizer/events/${event._id}/dashboard`}>Dashboard</Link><Link className="rounded-lg border border-cyan-700 px-3 py-2 text-cyan-300" to={`/organizer/events/${event._id}/check-in`}>Check-in</Link></>}
               <button disabled={publishEvent.isPending || updateEvent.isPending} className="rounded-lg border border-cyan-700 px-3 py-2 text-cyan-300 disabled:opacity-50" onClick={() => togglePublish(event)}>{event.status === 'published' ? 'Unpublish' : 'Publish'}</button>
               <button className="rounded-lg border border-red-900 px-3 py-2 text-red-300" onClick={() => { if (window.confirm('Delete this event?')) deleteEvent.mutate(event._id) }}>Delete</button>
             </div>
@@ -263,11 +265,11 @@ function Navigation() {
   const { user, logout } = useAuthStore()
   const location = useLocation()
   const authSwitchClass = location.pathname === '/register' ? 'auth-switch register-active' : 'auth-switch'
-  return <nav className="site-nav"><Link className="brand" to="/"><span className="brand-mark">E</span>EventHub</Link><div className="nav-links"><Link className={location.pathname === '/' ? 'active' : ''} to="/">Discover</Link>{user?.role === 'organizer' && <Link to="/organizer/events">Manage events</Link>}</div><div className="nav-actions">{user ? <><span className="nav-user">{user.name}</span><button onClick={logout} className="nav-logout">Log out</button></> : <div className={authSwitchClass}><Link to="/login">Login</Link><Link to="/register">Create account</Link></div>}</div></nav>
+  return <nav className="site-nav"><Link className="brand" to="/"><span className="brand-mark">E</span>EventHub</Link><div className="nav-links"><Link className={location.pathname === '/' ? 'active' : ''} to="/">Discover</Link>{user?.role === 'attendee' && <Link className={location.pathname.startsWith('/attendee/bookings') ? 'active' : ''} to="/attendee/bookings">My bookings</Link>}{user?.role === 'organizer' && <Link to="/organizer/events">Manage events</Link>}</div><div className="nav-actions">{user ? <><span className="nav-user">{user.name}</span><button onClick={logout} className="nav-logout">Log out</button></> : <div className={authSwitchClass}><Link to="/login">Login</Link><Link to="/register">Create account</Link></div>}</div></nav>
 }
 
 function App() {
-  return <div className="app-shell"><Navigation /><main><Routes><Route path="/" element={<Home />} /><Route path="/login" element={<AuthForm mode="login" />} /><Route path="/register" element={<AuthForm mode="register" />} /><Route path="/events/:id" element={<EventDetail />} /><Route path="/attendee/events/:eventId/seats" element={<ProtectedRoute allowedRoles={['attendee']}><SeatMap /></ProtectedRoute>} /><Route path="/attendee/events/:eventId/booking" element={<ProtectedRoute allowedRoles={['attendee']}><BookingSummary /></ProtectedRoute>} /><Route path="/attendee/confirmation/:bookingId" element={<ProtectedRoute allowedRoles={['attendee']}><Confirmation /></ProtectedRoute>} /><Route path="/organizer/*" element={<ProtectedRoute allowedRoles={['organizer']}><Routes><Route path="dashboard" element={<Navigate to="/organizer/events" replace />} /><Route path="events" element={<OrganizerEvents />} /><Route path="events/new" element={<EventForm />} /><Route path="events/:eventId/dashboard" element={<Dashboard />} /><Route path="events/:id/edit" element={<EventForm />} /><Route path="*" element={<Navigate to="events" replace />} /></Routes></ProtectedRoute>} /><Route path="/attendee/*" element={<ProtectedRoute allowedRoles={['attendee']}><Routes><Route path="discover" element={<EventDiscovery />} /><Route path="*" element={<Navigate to="discover" replace />} /></Routes></ProtectedRoute>} /></Routes></main></div>
+  return <div className="app-shell"><Navigation /><main><Routes><Route path="/" element={<Home />} /><Route path="/login" element={<AuthForm mode="login" />} /><Route path="/register" element={<AuthForm mode="register" />} /><Route path="/events/:id" element={<EventDetail />} /><Route path="/attendee/events/:eventId/seats" element={<ProtectedRoute allowedRoles={['attendee']}><SeatMap /></ProtectedRoute>} /><Route path="/attendee/events/:eventId/booking" element={<ProtectedRoute allowedRoles={['attendee']}><BookingSummary /></ProtectedRoute>} /><Route path="/attendee/confirmation/:bookingId" element={<ProtectedRoute allowedRoles={['attendee']}><Confirmation /></ProtectedRoute>} /><Route path="/attendee/bookings" element={<ProtectedRoute allowedRoles={['attendee']}><MyBookings /></ProtectedRoute>} /><Route path="/organizer/*" element={<ProtectedRoute allowedRoles={['organizer']}><Routes><Route path="dashboard" element={<Navigate to="/organizer/events" replace />} /><Route path="events" element={<OrganizerEvents />} /><Route path="events/new" element={<EventForm />} /><Route path="events/:eventId/dashboard" element={<Dashboard />} /><Route path="events/:eventId/check-in" element={<CheckIn />} /><Route path="events/:id/edit" element={<EventForm />} /><Route path="*" element={<Navigate to="events" replace />} /></Routes></ProtectedRoute>} /><Route path="/attendee/*" element={<ProtectedRoute allowedRoles={['attendee']}><Routes><Route path="discover" element={<EventDiscovery />} /><Route path="*" element={<Navigate to="discover" replace />} /></Routes></ProtectedRoute>} /></Routes></main></div>
 }
 
 export default App
