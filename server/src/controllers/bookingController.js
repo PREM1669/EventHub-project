@@ -1,5 +1,6 @@
 const mongoose = require('mongoose');
 const Booking = require('../models/Booking');
+const Event = require('../models/Event');
 const Seat = require('../models/Seat');
 const Ticket = require('../models/Ticket');
 const { generateQrImage, signQrToken } = require('../services/qr');
@@ -83,6 +84,48 @@ exports.getMyBookings = async (req, res) => {
     .populate('seats')
     .sort({ createdAt: -1 });
   res.json(bookings);
+};
+
+exports.cancelBooking = async (req, res) => {
+  if (!mongoose.isValidObjectId(req.params.bookingId)) {
+    return res.status(404).json({ error: 'Booking not found' });
+  }
+
+  const session = await mongoose.startSession();
+  try {
+    session.startTransaction();
+    const booking = await Booking.findOne({
+      _id: req.params.bookingId,
+      attendee: req.user.id
+    }).session(session);
+    if (!booking) throw new Error('Booking not found');
+    if (booking.status === 'cancelled') throw new Error('Booking already cancelled');
+
+    const event = await Event.findById(booking.event).session(session);
+    if (!event) throw new Error('Event not found');
+    const cancellationDeadline = new Date(event.date).getTime() - (24 * 60 * 60 * 1000);
+    if (Date.now() >= cancellationDeadline) {
+      throw new Error('Bookings can only be cancelled at least 24 hours before the event');
+    }
+
+    await Seat.updateMany(
+      { _id: { $in: booking.seats }, event: booking.event, status: 'booked' },
+      { status: 'available', heldBy: null, holdExpiresAt: null },
+      { session }
+    );
+    booking.status = 'cancelled';
+    booking.refundRef = `REFUND-${Date.now()}`;
+    await booking.save({ session });
+    await session.commitTransaction();
+
+    req.io.to(`event:${booking.event}`).emit('seats-released', { seatIds: booking.seats });
+    res.json({ success: true, booking });
+  } catch (error) {
+    if (session.inTransaction()) await session.abortTransaction();
+    res.status(400).json({ error: error.message || 'Booking cancellation failed' });
+  } finally {
+    await session.endSession();
+  }
 };
 
 exports.getBookingTickets = async (req, res) => {

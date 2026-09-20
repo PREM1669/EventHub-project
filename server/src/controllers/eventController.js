@@ -133,7 +133,8 @@ exports.getEventById = async (req, res) => {
   if (!mongoose.isValidObjectId(req.params.id)) return res.status(404).json({ error: 'Event not found' });
   const event = await Event.findOne({ _id: req.params.id, status: 'published' });
   if (!event) return res.status(404).json({ error: 'Event not found' });
-  res.json(event);
+  const available = await Seat.countDocuments({ event: event._id, status: 'available' });
+  res.json({ ...event.toObject(), available });
 };
 
 exports.listEvents = async (req, res) => {
@@ -149,5 +150,9 @@ exports.listEvents = async (req, res) => {
   }
 
   const events = await Event.find(filter).sort({ date: 1 });
-  res.json(events);
+  const eventsWithAvailability = await Promise.all(events.map(async (event) => ({
+    ...event.toObject(),
+    available: await Seat.countDocuments({ event: event._id, status: 'available' })
+  })));
+  res.json(eventsWithAvailability);
 };

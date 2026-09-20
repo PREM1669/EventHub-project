@@ -56,6 +56,7 @@ export default function SeatMap() {
       if (status === 'available') removeMyHold(seatId)
     }
     const onSeatsBooked = ({ seatIds }) => seatIds.forEach((seatId) => updateSeat(seatId, { status: 'booked', heldBy: null, holdExpiresAt: null }))
+    const onSeatsReleased = ({ seatIds }) => seatIds.forEach((seatId) => updateSeat(seatId, { status: 'available', heldBy: null, holdExpiresAt: null }))
     const onHoldSuccess = ({ seatId, expiresAt }) => addMyHold({ seatId, expiresAt })
     const onHoldFailed = ({ reason }) => setError(reason)
     const onAnnouncement = (announcement) => setAnnouncements((current) => [announcement, ...current])
@@ -63,6 +64,7 @@ export default function SeatMap() {
     socket.on('hold-success', onHoldSuccess)
     socket.on('hold-failed', onHoldFailed)
     socket.on('seats-booked', onSeatsBooked)
+    socket.on('seats-released', onSeatsReleased)
     socket.on('announcement', onAnnouncement)
     return () => {
       mounted = false
@@ -71,6 +73,7 @@ export default function SeatMap() {
       socket.off('hold-success', onHoldSuccess)
       socket.off('hold-failed', onHoldFailed)
       socket.off('seats-booked', onSeatsBooked)
+      socket.off('seats-released', onSeatsReleased)
       socket.off('announcement', onAnnouncement)
     }
   }, [eventId, setSeats, updateSeat, addMyHold, removeMyHold])

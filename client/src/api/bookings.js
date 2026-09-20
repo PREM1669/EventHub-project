@@ -1,4 +1,4 @@
-import { useMutation, useQuery } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import api from './axios'
 
 export const useCreateBooking = () => useMutation({
@@ -15,3 +15,11 @@ export const useBookingTickets = (bookingId, enabled = false) => useQuery({
   queryFn: () => api.get(`/bookings/${bookingId}/tickets`).then((response) => response.data),
   enabled: Boolean(bookingId) && enabled,
 })
+
+export const useCancelBooking = () => {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (bookingId) => api.post(`/bookings/${bookingId}/cancel`).then((response) => response.data),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['myBookings'] }),
+  })
+}

@@ -28,7 +28,7 @@ function EventDiscovery() {
   const [searchParams, setSearchParams] = useSearchParams()
   const [search, setSearch] = useState(searchParams.get('search') || '')
   const [category, setCategory] = useState(searchParams.get('category') || '')
-  const [from, setFrom] = useState(searchParams.get('from') || '')
+  const [from, setFrom] = useState(searchParams.get('from') || new Date().toISOString())
   const [to, setTo] = useState(searchParams.get('to') || '')
   const [debouncedSearch, setDebouncedSearch] = useState(search)
 
@@ -69,7 +69,7 @@ function EventDiscovery() {
           <option value="Sports">Sports</option>
           <option value="Business">Business</option>
         </select>
-        <input className={inputClass} type="date" value={from} onChange={(event) => setFrom(event.target.value)} />
+        <input className={inputClass} type="date" value={from.slice(0, 10)} onChange={(event) => setFrom(event.target.value)} />
         <input className={inputClass} type="date" value={to} onChange={(event) => setTo(event.target.value)} />
       </div>
       {isLoading && <p className="text-slate-400">Loading events...</p>}
@@ -77,10 +77,10 @@ function EventDiscovery() {
       {!isLoading && !isError && events.length === 0 && <p className="rounded-xl border border-dashed border-slate-700 p-8 text-center text-slate-400">No published events match your filters.</p>}
       <div className="grid gap-5 md:grid-cols-2">
         {events.map((event) => (
-          <Link key={event._id} to={`/events/${event._id}`} className="rounded-xl border border-slate-800 bg-slate-900 p-6 transition hover:border-cyan-400">
+          <Link key={event._id} to={`/events/${event._id}`} className={`rounded-xl border border-slate-800 bg-slate-900 p-6 transition ${event.available === 0 ? 'opacity-75' : 'hover:border-cyan-400'}`}>
             <div className="flex items-start justify-between gap-4">
               <h2 className="text-xl font-semibold">{event.title}</h2>
-              <span className="rounded-full bg-cyan-400/10 px-3 py-1 text-xs text-cyan-300">{event.category}</span>
+              <div className="flex gap-2"><span className="rounded-full bg-cyan-400/10 px-3 py-1 text-xs text-cyan-300">{event.category}</span>{event.available === 0 && <span className="rounded-full bg-red-400/10 px-3 py-1 text-xs text-red-300">Sold out</span>}</div>
             </div>
             <p className="mt-3 line-clamp-2 text-slate-400">{event.description || 'No description provided.'}</p>
             <p className="mt-5 text-sm text-slate-300">{formatDate(event.date)} · {event.venue}</p>
@@ -123,7 +123,7 @@ function EventDetail() {
       <div className="mt-3 space-y-2">
         {event.priceTiers.map((tier) => <div key={tier.name} className="flex justify-between rounded-lg bg-slate-800 p-3"><span>{tier.name} · {tier.seatCount} seats</span><span>{formatPrice(tier.price)}</span></div>)}
       </div>
-      <Link to={`/attendee/events/${event._id}/seats`} className="mt-8 inline-block rounded-lg bg-cyan-400 px-5 py-3 font-semibold text-slate-950">Select Seats</Link>
+      {event.available === 0 ? <p className="mt-8 rounded-lg border border-red-400/30 bg-red-400/10 px-5 py-3 text-center font-semibold text-red-200">Sold out</p> : <Link to={`/attendee/events/${event._id}/seats`} className="mt-8 inline-block rounded-lg bg-cyan-400 px-5 py-3 font-semibold text-slate-950">Select Seats</Link>}
     </section>
   )
 }
