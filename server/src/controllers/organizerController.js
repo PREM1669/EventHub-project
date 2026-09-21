@@ -95,7 +95,7 @@ exports.sendAnnouncement = async (req, res) => {
     organizer: req.user.id,
     message
   });
-  req.io.to(`event:${event._id}`).emit('announcement', {
+  req.io?.to(`event:${event._id}`).emit('announcement', {
     message: announcement.message,
     sentAt: announcement.createdAt
   });

@@ -59,7 +59,7 @@ exports.createBooking = async (req, res) => {
     }
 
     await session.commitTransaction();
-    req.io.to(`event:${eventId}`).emit('seats-booked', { seatIds: uniqueSeatIds });
+    req.io?.to(`event:${eventId}`).emit('seats-booked', { seatIds: uniqueSeatIds });
 
     const ticketsWithQr = await Promise.all(tickets.map(async (ticket) => {
       const ticketSeat = seats.find((seat) => seat._id.equals(ticket.seat));
@@ -118,7 +118,7 @@ exports.cancelBooking = async (req, res) => {
     await booking.save({ session });
     await session.commitTransaction();
 
-    req.io.to(`event:${booking.event}`).emit('seats-released', { seatIds: booking.seats });
+    req.io?.to(`event:${booking.event}`).emit('seats-released', { seatIds: booking.seats });
     res.json({ success: true, booking });
   } catch (error) {
     if (session.inTransaction()) await session.abortTransaction();

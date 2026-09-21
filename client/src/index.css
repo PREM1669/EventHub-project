@@ -76,6 +76,8 @@ body {
 
 .brand-amp { color: #6d80d8; }
 .nav-links, .nav-actions { display: flex; align-items: center; gap: 28px; }
+.menu-toggle { display: none; border: 0; background: transparent; padding: 8px; cursor: pointer; }
+.menu-toggle span { display: block; width: 22px; height: 2px; margin: 4px 0; background: #ffc58d; }
 .nav-links a, .nav-actions a, .nav-logout { color: #c5b1a0; text-decoration: none; font-size: 14px; }
 .nav-links a:hover, .nav-links a.active { color: #ffd0a5; }
 .nav-links a.active { border-radius: 999px; background: rgba(224, 130, 61, .2); padding: 10px 18px; box-shadow: 0 4px 14px rgba(0, 0, 0, .24); }
@@ -97,6 +99,14 @@ button.bg-cyan-400, a.bg-cyan-400 { background: linear-gradient(135deg, #ffb36b,
 
 @media (max-width: 760px) {
   .app-shell { padding: 0 20px 40px; }
-  .nav-links { display: none; }
+  .site-nav { position: relative; flex-wrap: wrap; height: auto; min-height: 74px; }
+  .menu-toggle { display: block; margin-left: auto; }
+  .nav-links { display: none; order: 3; width: 100%; flex-direction: column; align-items: stretch; gap: 8px; padding: 14px 0 4px; }
+  .menu-open .nav-links { display: flex; }
+  .nav-links a { padding: 10px 12px; }
+  .nav-links a.active { padding: 10px 12px; }
+  .nav-actions { margin-left: 10px; }
   .nav-user { display: none; }
+  main > section:first-child { margin-top: 28px; }
+  .site-nav { border-radius: 0 0 18px 18px; }
 }

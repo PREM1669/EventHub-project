@@ -264,8 +264,10 @@ function AuthForm({ mode }) {
 function Navigation() {
   const { user, logout } = useAuthStore()
   const location = useLocation()
+  const [menuOpen, setMenuOpen] = useState(false)
   const authSwitchClass = location.pathname === '/register' ? 'auth-switch register-active' : 'auth-switch'
-  return <nav className="site-nav"><Link className="brand" to="/"><span className="brand-mark">E</span>EventHub</Link><div className="nav-links"><Link className={location.pathname === '/' ? 'active' : ''} to="/">Discover</Link>{user?.role === 'attendee' && <Link className={location.pathname.startsWith('/attendee/bookings') ? 'active' : ''} to="/attendee/bookings">My bookings</Link>}{user?.role === 'organizer' && <Link to="/organizer/events">Manage events</Link>}</div><div className="nav-actions">{user ? <><span className="nav-user">{user.name}</span><button onClick={logout} className="nav-logout">Log out</button></> : <div className={authSwitchClass}><Link to="/login">Login</Link><Link to="/register">Create account</Link></div>}</div></nav>
+  const closeMenu = () => setMenuOpen(false)
+  return <nav className={`site-nav ${menuOpen ? 'menu-open' : ''}`}><Link className="brand" to="/" onClick={closeMenu}><span className="brand-mark">E</span>EventHub</Link><button className="menu-toggle" aria-label="Toggle navigation" aria-expanded={menuOpen} onClick={() => setMenuOpen((open) => !open)}><span /><span /><span /></button><div className="nav-links"><Link className={location.pathname === '/' ? 'active' : ''} to="/" onClick={closeMenu}>Discover</Link>{user?.role === 'attendee' && <Link className={location.pathname.startsWith('/attendee/bookings') ? 'active' : ''} to="/attendee/bookings" onClick={closeMenu}>My bookings</Link>}{user?.role === 'organizer' && <Link to="/organizer/events" onClick={closeMenu}>Manage events</Link>}</div><div className="nav-actions">{user ? <><span className="nav-user">{user.name}</span><button onClick={() => { logout(); closeMenu() }} className="nav-logout">Log out</button></> : <div className={authSwitchClass}><Link to="/login" onClick={closeMenu}>Login</Link><Link to="/register" onClick={closeMenu}>Create account</Link></div>}</div></nav>
 }
 
 function App() {

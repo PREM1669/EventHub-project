@@ -2,36 +2,15 @@ require('dotenv').config();
 
 const cors = require('cors');
 const dns = require('dns');
-const express = require('express');
 const http = require('http');
 const mongoose = require('mongoose');
 const { Server } = require('socket.io');
-const authRoutes = require('./routes/authRoutes');
-const portalRoutes = require('./routes/portalRoutes');
-const eventRoutes = require('./routes/eventRoutes');
-const bookingRoutes = require('./routes/bookingRoutes');
-const organizerRoutes = require('./routes/organizerRoutes');
-const checkinRoutes = require('./routes/checkinRoutes');
+const app = require('./app');
 const { registerSeatSocket } = require('./sockets/seatSocket');
-
-const app = express();
-app.use(cors());
-app.use(express.json());
 
 const server = http.createServer(app);
 const io = new Server(server, { cors: { origin: '*' } });
-
-app.get('/api/health', (req, res) => res.json({ status: 'ok' }));
-app.use((req, res, next) => {
-  req.io = io;
-  next();
-});
-app.use('/api/auth', authRoutes);
-app.use('/api/portal', portalRoutes);
-app.use('/api/events', eventRoutes);
-app.use('/api/bookings', bookingRoutes);
-app.use('/api/organizer/events', organizerRoutes);
-app.use('/api/checkin', checkinRoutes);
+app.io = io;
 
 registerSeatSocket(io);
 

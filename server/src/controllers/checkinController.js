@@ -76,7 +76,7 @@ async function checkIn(req, res) {
     checkedIn: true
   });
 
-  req.io.to(`event:${ticket.booking.event._id}`).emit('checkin-update', { checkedInCount });
+  req.io?.to(`event:${ticket.booking.event._id}`).emit('checkin-update', { checkedInCount });
   res.json({
     success: true,
     attendeeName: ticket.booking.attendee?.name || 'Unknown attendee',
