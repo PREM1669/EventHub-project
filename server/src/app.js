@@ -8,7 +8,8 @@ const organizerRoutes = require('./routes/organizerRoutes');
 const checkinRoutes = require('./routes/checkinRoutes');
 
 const app = express();
-app.use(cors());
+const allowedOrigin = process.env.CLIENT_URL || 'http://localhost:5173';
+app.use(cors({ origin: allowedOrigin, credentials: true }));
 app.use(express.json());
 app.get('/api/health', (req, res) => res.json({ status: 'ok' }));
 app.use((req, res, next) => {
