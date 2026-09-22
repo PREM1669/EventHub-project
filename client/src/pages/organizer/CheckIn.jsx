@@ -53,6 +53,25 @@ export default function CheckIn() {
     }
   }, [])
 
+  const refreshCameras = useCallback(async () => {
+    try {
+      if (!navigator.mediaDevices?.getUserMedia) throw new Error('Camera API unavailable')
+      const permissionStream = await navigator.mediaDevices.getUserMedia({ video: true })
+      permissionStream.getTracks().forEach((track) => track.stop())
+      const availableCameras = await Html5Qrcode.getCameras()
+      if (!availableCameras.length) throw new Error('No camera found')
+      setCameras(availableCameras)
+      setSelectedCameraId((current) => {
+        if (availableCameras.some((camera) => camera.id === current)) return current
+        const rearCamera = availableCameras.find((camera) => /back|rear|environment/i.test(camera.label))
+        return (rearCamera || availableCameras[0]).id
+      })
+      setError('')
+    } catch {
+      setError('Unable to list cameras. Allow camera permission, connect a camera, or use manual entry instead.')
+    }
+  }, [])
+
   useEffect(() => {
     if (!scanning) {
       setCameras([])
@@ -60,30 +79,10 @@ export default function CheckIn() {
       return undefined
     }
 
-    let active = true
-    Html5Qrcode.getCameras().then((availableCameras) => {
-      if (!active) return
-      if (!availableCameras.length) {
-        setError('No camera was found. Connect a camera or use manual entry.')
-        setScanning(false)
-        return
-      }
-      setCameras(availableCameras)
-      setSelectedCameraId((current) => {
-        if (availableCameras.some((camera) => camera.id === current)) return current
-        const rearCamera = availableCameras.find((camera) => /back|rear|environment/i.test(camera.label))
-        return (rearCamera || availableCameras[0]).id
-      })
-    }).catch(() => {
-      if (!active) return
-      setError('Unable to access cameras. Allow camera permission or use manual entry instead.')
-      setScanning(false)
-    })
+    refreshCameras()
 
-    return () => {
-      active = false
-    }
-  }, [scanning])
+    return undefined
+  }, [scanning, refreshCameras])
 
   useEffect(() => {
     if (!scanning || !selectedCameraId) return undefined
@@ -151,11 +150,11 @@ export default function CheckIn() {
       <div className="mt-6 flex flex-wrap gap-3">
         <button onClick={() => setScanning((current) => !current)} className="rounded-lg bg-cyan-400 px-4 py-3 font-semibold text-slate-950">{scanning ? 'Stop camera' : 'Start camera scanner'}</button>
       </div>
-      {scanning && cameras.length > 1 && <div className="mt-4">
-        <label className="text-sm text-slate-300" htmlFor="camera-select">Camera</label>
-        <select id="camera-select" className="mt-2 w-full rounded-lg bg-slate-800 px-4 py-3 outline-none ring-cyan-400 focus:ring-2" value={selectedCameraId} onChange={(event) => setSelectedCameraId(event.target.value)}>
+      {scanning && <div className="mt-4">
+        <div className="flex items-center justify-between gap-3"><label className="text-sm text-slate-300" htmlFor="camera-select">Available cameras ({cameras.length})</label><button type="button" onClick={refreshCameras} className="text-xs text-orange-200 underline">Refresh list</button></div>
+        {cameras.length > 0 ? <select id="camera-select" className="mt-2 w-full rounded-lg bg-slate-800 px-4 py-3 outline-none ring-cyan-400 focus:ring-2" value={selectedCameraId} onChange={(event) => setSelectedCameraId(event.target.value)}>
           {cameras.map((camera, index) => <option key={camera.id} value={camera.id}>{camera.label || `Camera ${index + 1}`}</option>)}
-        </select>
+        </select> : <p className="mt-2 text-sm text-amber-200">No cameras listed yet. Allow permission and refresh the list.</p>}
       </div>}
       {scanning && <div><div id="qr-reader" className="mt-5 max-w-lg overflow-hidden rounded-lg bg-slate-800" /><p className="mt-2 text-xs text-slate-400">Use the rear camera, keep the QR code inside the frame, and hold it about 15–30 cm away.</p></div>}
       <form className="mt-6 space-y-3" onSubmit={(event) => { event.preventDefault(); submitToken(manualCode) }}>
